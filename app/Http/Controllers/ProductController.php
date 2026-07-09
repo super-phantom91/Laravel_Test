@@ -34,11 +34,10 @@ class ProductController extends Controller
             'price_per_item' => ['required', 'numeric', 'min:0'],
         ]);
 
-        $product = $this->storage->store($validated);
+        $this->storage->store($validated);
 
         return response()->json([
             'message' => 'Product saved successfully.',
-            'product' => $product,
             'products' => $this->storage->all(),
             'sum_total_value' => $this->storage->sumTotalValue(),
         ], 201);
@@ -60,7 +59,6 @@ class ProductController extends Controller
 
         return response()->json([
             'message' => 'Product updated successfully.',
-            'product' => $product,
             'products' => $this->storage->all(),
             'sum_total_value' => $this->storage->sumTotalValue(),
         ]);

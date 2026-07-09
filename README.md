@@ -1,59 +1,209 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Laravel Product Inventory — Skills Test
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+A Laravel web application for managing product inventory. Submit products through a Bootstrap form, persist data to a JSON file, and view, edit, or delete entries via Ajax without page reloads.
 
-## About Laravel
+## Features
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+- **Product form** with Product name, Quantity in stock, and Price per item
+- **JSON file storage** — data saved to `storage/app/products.json` with valid JSON syntax
+- **Product table** sorted by datetime submitted, showing:
+  - Product name
+  - Quantity in stock
+  - Price per item
+  - Datetime submitted
+  - Total value number (`quantity × price`)
+- **Sum total row** at the bottom of the table
+- **Edit** and **Delete** actions per row (Ajax + confirmation modal)
+- **Bootstrap 5** UI with responsive layout and smooth animations
+- **No database required** — works out of the box with file-based storage
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Requirements
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+| Requirement | Version |
+|---|---|
+| PHP | 8.2 or higher |
+| Composer | 2.x |
+| PHP extensions | `mbstring`, `openssl`, `pdo`, `tokenizer`, `xml`, `ctype`, `json`, `fileinfo` |
 
-## Learning Laravel
+Node.js and npm are **not** required. Bootstrap and icons are loaded from CDN.
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## Quick Start
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+### 1. Extract and enter the project directory
 
-## Laravel Sponsors
+```bash
+cd Laravel_Test
+```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+### 2. Install PHP dependencies
 
-### Premium Partners
+```bash
+composer install
+```
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+### 3. Create environment file and generate app key
 
-## Contributing
+**Linux / macOS:**
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+```bash
+cp .env.example .env
+php artisan key:generate
+```
 
-## Code of Conduct
+**Windows (PowerShell):**
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+```powershell
+Copy-Item .env.example .env
+php artisan key:generate
+```
 
-## Security Vulnerabilities
+Or use the built-in setup script:
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+composer run setup
+```
+
+### 4. Start the development server
+
+```bash
+php artisan serve
+```
+
+### 5. Open the application
+
+Visit [http://127.0.0.1:8000](http://127.0.0.1:8000) in your browser.
+
+## Usage
+
+### Add a product
+
+1. Fill in **Product name**, **Quantity in stock**, and **Price per item**
+2. Click **Submit Product**
+3. The table updates instantly via Ajax
+
+### Edit a product
+
+1. Click the pencil icon on any row
+2. Update the fields in the modal
+3. Click **Save Changes**
+
+### Delete a product
+
+1. Click the trash icon on any row
+2. Confirm deletion in the modal
+
+## API Endpoints
+
+| Method | URL | Description |
+|---|---|---|
+| `GET` | `/` | Product inventory page |
+| `GET` | `/products/list` | List all products + sum total (JSON) |
+| `POST` | `/products` | Create a new product (JSON) |
+| `PUT` | `/products/{id}` | Update a product (JSON) |
+| `DELETE` | `/products/{id}` | Delete a product (JSON) |
+
+### Example: Create product
+
+```bash
+curl -X POST http://127.0.0.1:8000/products \
+  -H "Content-Type: application/json" \
+  -H "X-CSRF-TOKEN: your-csrf-token" \
+  -d '{"product_name":"Widget","quantity_in_stock":10,"price_per_item":9.99}'
+```
+
+> CSRF token is required for `POST`, `PUT`, and `DELETE` requests. The web UI handles this automatically.
+
+## Data Storage
+
+Products are stored in:
+
+```
+storage/app/products.json
+```
+
+The file is created automatically on first use. Example structure:
+
+```json
+[
+    {
+        "id": 1,
+        "product_name": "Widget",
+        "quantity_in_stock": 10,
+        "price_per_item": 9.99,
+        "datetime_submitted": "2026-07-09 12:00:00"
+    }
+]
+```
+
+`total_value` is calculated at runtime and is not persisted.
+
+## Project Structure
+
+```
+app/
+├── Http/Controllers/
+│   └── ProductController.php    # Web + API endpoints
+└── Services/
+    └── ProductStorageService.php # JSON read/write logic
+
+public/
+└── js/
+    └── products.js              # Ajax form, table, edit, delete
+
+resources/views/products/
+└── index.blade.php              # Bootstrap UI
+
+routes/
+└── web.php                      # Application routes
+
+storage/app/
+└── products.json                # Product data (auto-created)
+```
+
+## Deployment Notes
+
+1. Point your web server document root to the `public/` directory
+2. Ensure `storage/` and `bootstrap/cache/` are writable by the web server
+3. Run `composer install --optimize-autoloader --no-dev` in production
+4. Set `APP_ENV=production` and `APP_DEBUG=false` in `.env`
+5. Run `php artisan config:cache` after configuring `.env`
+
+### Apache
+
+The included `public/.htaccess` handles URL rewriting. Enable `mod_rewrite`.
+
+### Nginx
+
+```nginx
+root /path/to/Laravel_Test/public;
+index index.php;
+
+location / {
+    try_files $uri $uri/ /index.php?$query_string;
+}
+
+location ~ \.php$ {
+    fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+    fastcgi_param SCRIPT_FILENAME $realpath_root$fastcgi_script_name;
+    include fastcgi_params;
+}
+```
+
+## Running Tests
+
+```bash
+php artisan test
+```
+
+## Troubleshooting
+
+| Issue | Solution |
+|---|---|
+| `500` error on first run | Run `php artisan key:generate` and ensure `storage/` is writable |
+| Form submit returns `419` | Clear browser cache; CSRF token is set in the page `<meta>` tag |
+| Products not saving | Check write permissions on `storage/app/` |
+| Blank page | Enable `APP_DEBUG=true` in `.env` and check `storage/logs/laravel.log` |
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
