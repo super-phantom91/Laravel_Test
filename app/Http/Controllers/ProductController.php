@@ -65,4 +65,17 @@ class ProductController extends Controller
             'sum_total_value' => $this->storage->sumTotalValue(),
         ]);
     }
+
+    public function destroy(int $id): JsonResponse
+    {
+        if (! $this->storage->delete($id)) {
+            return response()->json(['message' => 'Product not found.'], 404);
+        }
+
+        return response()->json([
+            'message' => 'Product deleted successfully.',
+            'products' => $this->storage->all(),
+            'sum_total_value' => $this->storage->sumTotalValue(),
+        ]);
+    }
 }

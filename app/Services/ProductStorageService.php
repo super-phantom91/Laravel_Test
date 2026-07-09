@@ -68,6 +68,25 @@ class ProductStorageService
         return $updated;
     }
 
+    public function delete(int $id): bool
+    {
+        $products = $this->read();
+        $initialCount = count($products);
+
+        $products = array_values(array_filter(
+            $products,
+            fn (array $product) => $product['id'] !== $id
+        ));
+
+        if (count($products) === $initialCount) {
+            return false;
+        }
+
+        $this->write($products);
+
+        return true;
+    }
+
     public function sumTotalValue(): float
     {
         return round(array_sum(array_column($this->all(), 'total_value')), 2);

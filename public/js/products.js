@@ -5,25 +5,45 @@ document.addEventListener('DOMContentLoaded', () => {
     const tableBody = document.getElementById('products-table-body');
     const tableFoot = document.getElementById('products-table-foot');
     const sumTotalValue = document.getElementById('sum-total-value');
+    const productCount = document.getElementById('product-count');
     const alertContainer = document.getElementById('alert-container');
     const editModalElement = document.getElementById('edit-modal');
+    const deleteModalElement = document.getElementById('delete-modal');
+    const deleteProductName = document.getElementById('delete-product-name');
+    const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
     const editModal = new bootstrap.Modal(editModalElement);
+    const deleteModal = new bootstrap.Modal(deleteModalElement);
+
+    let pendingDeleteId = null;
+    let alertTimeout = null;
 
     const routes = {
         list: '/products/list',
         store: '/products',
         update: (id) => `/products/${id}`,
+        destroy: (id) => `/products/${id}`,
     };
 
     const formatCurrency = (value) => Number(value).toFixed(2);
 
     const showAlert = (message, type = 'success') => {
+        if (alertTimeout) {
+            clearTimeout(alertTimeout);
+        }
+
+        const icon = type === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill';
+
         alertContainer.innerHTML = `
-            <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                ${message}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            <div class="alert alert-${type} alert-dismissible fade show d-flex align-items-center gap-2" role="alert">
+                <i class="bi ${icon}"></i>
+                <span>${message}</span>
+                <button type="button" class="btn-close ms-auto" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         `;
+
+        alertTimeout = setTimeout(() => {
+            alertContainer.innerHTML = '';
+        }, 4000);
     };
 
     const escapeHtml = (value) => {
@@ -35,52 +55,77 @@ document.addEventListener('DOMContentLoaded', () => {
             .replaceAll("'", '&#039;');
     };
 
+    const updateProductCount = (count) => {
+        productCount.textContent = `${count} item${count === 1 ? '' : 's'}`;
+    };
+
     const renderProducts = (products, sumTotal) => {
+        updateProductCount(products.length);
+
         if (!products.length) {
             tableBody.innerHTML = `
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">No products submitted yet.</td>
+                    <td colspan="6">
+                        <div class="empty-state">
+                            <i class="bi bi-inbox"></i>
+                            No products submitted yet.
+                        </div>
+                    </td>
                 </tr>
             `;
             tableFoot.style.display = 'none';
             return;
         }
 
-        tableBody.innerHTML = products.map((product) => `
-            <tr>
-                <td>${escapeHtml(product.product_name)}</td>
-                <td>${product.quantity_in_stock}</td>
-                <td>${formatCurrency(product.price_per_item)}</td>
-                <td>${product.datetime_submitted}</td>
-                <td>${formatCurrency(product.total_value)}</td>
+        tableBody.innerHTML = products.map((product, index) => `
+            <tr style="animation-delay: ${index * 0.04}s">
+                <td><span class="product-name">${escapeHtml(product.product_name)}</span></td>
+                <td><span class="badge-qty">${product.quantity_in_stock}</span></td>
+                <td class="price-cell">$${formatCurrency(product.price_per_item)}</td>
+                <td class="datetime-cell">${product.datetime_submitted}</td>
+                <td class="total-cell">$${formatCurrency(product.total_value)}</td>
                 <td>
-                    <button
-                        type="button"
-                        class="btn btn-sm btn-outline-primary edit-btn"
-                        data-id="${product.id}"
-                        data-product-name="${escapeHtml(product.product_name)}"
-                        data-quantity="${product.quantity_in_stock}"
-                        data-price="${product.price_per_item}"
-                    >
-                        Edit
-                    </button>
+                    <div class="action-btns">
+                        <button
+                            type="button"
+                            class="btn btn-action btn-edit edit-btn"
+                            title="Edit"
+                            data-id="${product.id}"
+                            data-product-name="${escapeHtml(product.product_name)}"
+                            data-quantity="${product.quantity_in_stock}"
+                            data-price="${product.price_per_item}"
+                        >
+                            <i class="bi bi-pencil"></i>
+                        </button>
+                        <button
+                            type="button"
+                            class="btn btn-action btn-delete delete-btn"
+                            title="Delete"
+                            data-id="${product.id}"
+                            data-product-name="${escapeHtml(product.product_name)}"
+                        >
+                            <i class="bi bi-trash3"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
         `).join('');
 
-        sumTotalValue.textContent = formatCurrency(sumTotal);
+        sumTotalValue.textContent = `$${formatCurrency(sumTotal)}`;
         tableFoot.style.display = '';
 
         document.querySelectorAll('.edit-btn').forEach((button) => {
             button.addEventListener('click', () => openEditModal(button));
         });
+
+        document.querySelectorAll('.delete-btn').forEach((button) => {
+            button.addEventListener('click', () => openDeleteModal(button));
+        });
     };
 
     const loadProducts = async () => {
         const response = await fetch(routes.list, {
-            headers: {
-                'Accept': 'application/json',
-            },
+            headers: { 'Accept': 'application/json' },
         });
 
         if (!response.ok) {
@@ -133,6 +178,44 @@ document.addEventListener('DOMContentLoaded', () => {
         editModal.show();
     };
 
+    const openDeleteModal = (button) => {
+        pendingDeleteId = button.dataset.id;
+        deleteProductName.textContent = button.dataset.productName;
+        deleteModal.show();
+    };
+
+    const deleteProduct = async () => {
+        if (!pendingDeleteId) {
+            return;
+        }
+
+        confirmDeleteBtn.disabled = true;
+        confirmDeleteBtn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span> Deleting...';
+
+        const response = await fetch(routes.destroy(pendingDeleteId), {
+            method: 'DELETE',
+            headers: {
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+            },
+        });
+
+        const data = await response.json();
+
+        confirmDeleteBtn.disabled = false;
+        confirmDeleteBtn.innerHTML = '<i class="bi bi-trash3 me-1"></i> Delete';
+
+        if (!response.ok) {
+            showAlert(data.message || 'Delete failed.', 'danger');
+            return;
+        }
+
+        deleteModal.hide();
+        renderProducts(data.products, data.sum_total_value);
+        showAlert('Product deleted successfully.');
+        pendingDeleteId = null;
+    };
+
     productForm.addEventListener('submit', (event) => {
         const formData = new FormData(productForm);
 
@@ -154,6 +237,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (success) {
             editModal.hide();
         }
+    });
+
+    confirmDeleteBtn.addEventListener('click', deleteProduct);
+
+    deleteModalElement.addEventListener('hidden.bs.modal', () => {
+        pendingDeleteId = null;
     });
 
     loadProducts();
